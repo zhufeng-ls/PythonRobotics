@@ -103,37 +103,40 @@ def dlqr(A, B, Q, R):
 
 
 def lqr_steering_control(state, cx, cy, cyaw, ck, pe, pth_e):
+    # 1. 找最近路径点
     ind, e = calc_nearest_index(state, cx, cy, cyaw)
-
-    k = ck[ind]
-    v = state.v
-    th_e = pi_2_pi(state.yaw - cyaw[ind])
-
+    
+    # 2. 计算误差状态
+    k = ck[ind]  # 路径曲率
+    v = state.v  # 当前速度
+    th_e = pi_2_pi(state.yaw - cyaw[ind])  # 航向误差
+    
+    # 3. 构建状态空间模型 dx = A*x + B*u
     A = np.zeros((4, 4))
-    A[0, 0] = 1.0
-    A[0, 1] = dt
-    A[1, 2] = v
-    A[2, 2] = 1.0
-    A[2, 3] = dt
-    # print(A)
-
+    A[0, 0] = 1.0    # 横向误差
+    A[0, 1] = dt     # 横向误差 -> 横向误差变化率
+    A[1, 2] = v      # 航向误差 -> 横向误差变化率
+    A[2, 2] = 1.0    # 航向误差
+    A[2, 3] = dt     # 航向误差 -> 航向误差变化率
+    
     B = np.zeros((4, 1))
-    B[3, 0] = v / L
-
+    B[3, 0] = v / L  # 转向角对航向误差变化率的影响
+    
+    # 4. 求解LQR控制器
     K, _, _ = dlqr(A, B, Q, R)
-
+    
+    # 5. 构建状态向量
     x = np.zeros((4, 1))
-
-    x[0, 0] = e
-    x[1, 0] = (e - pe) / dt
-    x[2, 0] = th_e
-    x[3, 0] = (th_e - pth_e) / dt
-
-    ff = math.atan2(L * k, 1)
-    fb = pi_2_pi((-K @ x)[0, 0])
-
-    delta = ff + fb
-
+    x[0, 0] = e                    # 横向误差
+    x[1, 0] = (e - pe) / dt        # 横向误差变化率
+    x[2, 0] = th_e                 # 航向误差
+    x[3, 0] = (th_e - pth_e) / dt  # 航向误差变化率
+    
+    # 6. 计算控制输入
+    ff = math.atan2(L * k, 1)      # 前馈控制（基于路径曲率）
+    fb = pi_2_pi((-K @ x)[0, 0])   # 反馈控制（LQR）
+    delta = ff + fb                # 总转向角 = 前馈 + 反馈
+    
     return delta, ind, e, th_e
 
 
@@ -176,14 +179,27 @@ def closed_loop_prediction(cx, cy, cyaw, ck, speed_profile, goal):
     e, e_th = 0.0, 0.0
 
     while T >= time:
+        # 1. LQR转向控制
         dl, target_ind, e, e_th = lqr_steering_control(
             state, cx, cy, cyaw, ck, e, e_th)
-
+        
+        # 2. PID速度控制
         ai = pid_control(speed_profile[target_ind], state.v)
+        
+        # 3. 更新车辆状态
         state = update(state, ai, dl)
-
-        if abs(state.v) <= stop_speed:
-            target_ind += 1
+        
+        # 4. 检查是否到达目标
+        dx = state.x - goal[0]
+        dy = state.y - goal[1]
+        if math.hypot(dx, dy) <= goal_dis:
+            break
+            
+        # 5. 实时绘图
+        if show_animation:
+            plt.plot(cx, cy, "-r", label="course")      # 期望路径
+            plt.plot(x, y, "ob", label="trajectory")    # 实际轨迹
+            plt.plot(cx[target_ind], cy[target_ind], "xg", label="target")  # 目标点
 
         time = time + dt
 
