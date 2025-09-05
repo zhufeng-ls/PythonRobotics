@@ -376,17 +376,86 @@ class CubicSpline2D:
 
 
 def calc_spline_course(x, y, ds=0.1):
+    """
+    计算三次样条路径的完整轨迹信息
+    
+    该函数是路径规划的核心接口，将离散的路径点通过三次样条插值生成
+    平滑的连续轨迹，并计算轨迹上每个点的位置、航向角和曲率信息。
+    
+    Parameters
+    ----------
+    x : list or array
+        路径点的x坐标序列，必须按顺序排列
+    y : list or array  
+        路径点的y坐标序列，必须与x坐标一一对应
+    ds : float, optional
+        弧长采样间隔，默认0.1米。值越小轨迹越精细，但计算量越大
+        
+    Returns
+    -------
+    rx : list
+        插值后的x坐标序列，长度为 ceil(总弧长/ds)
+    ry : list
+        插值后的y坐标序列，与rx一一对应
+    ryaw : list
+        每个插值点的航向角序列 [rad]，表示轨迹在该点的切线方向
+    rk : list
+        每个插值点的曲率序列 [1/m]，表示轨迹在该点的弯曲程度
+    s : list
+        弧长参数序列 [m]，从0开始到总弧长结束，步长为ds
+        
+    Notes
+    -----
+    1. 弧长参数化：使用弧长s作为参数，确保轨迹上每点的参数化是均匀的
+    2. 三次样条特性：生成的轨迹C²连续（位置、速度、加速度都连续）
+    3. 曲率计算：基于样条的一阶和二阶导数计算几何曲率
+    4. 航向角：通过atan2(dy/ds, dx/ds)计算，表示轨迹切线方向
+        
+    Examples
+    --------
+    >>> import numpy as np
+    >>> x = [0, 5, 10, 15]
+    >>> y = [0, 3, -2, 1] 
+    >>> rx, ry, ryaw, rk, s = calc_spline_course(x, y, ds=0.5)
+    >>> print(f"生成了 {len(rx)} 个插值点")
+    >>> print(f"总弧长: {s[-1]:.2f} 米")
+    >>> print(f"起始航向角: {np.rad2deg(ryaw[0]):.1f}°")
+    >>> print(f"最大曲率: {max(rk):.3f} 1/m")
+    """
+    
+    # 步骤1: 创建2D三次样条对象
+    # 内部会计算弧长参数化 s，并分别对 x(s) 和 y(s) 建立1D三次样条
     sp = CubicSpline2D(x, y)
+    
+    # 步骤2: 生成均匀的弧长采样点
+    # 从0开始，以ds为步长，到总弧长sp.s[-1]结束
+    # 使用list()确保返回Python列表而非numpy数组
     s = list(np.arange(0, sp.s[-1], ds))
-
+    
+    # 步骤3: 初始化输出列表
+    # 用于存储插值后的轨迹信息
     rx, ry, ryaw, rk = [], [], [], []
+    
+    # 步骤4: 遍历每个弧长采样点，计算轨迹信息
     for i_s in s:
+        # 4.1 计算位置坐标 (x, y)
+        # 通过样条插值得到该弧长对应的精确位置
         ix, iy = sp.calc_position(i_s)
         rx.append(ix)
         ry.append(iy)
+        
+        # 4.2 计算航向角 (yaw)
+        # 航向角 = atan2(dy/ds, dx/ds)，表示轨迹切线方向
+        # 用于车辆朝向控制和路径跟踪
         ryaw.append(sp.calc_yaw(i_s))
+        
+        # 4.3 计算曲率 (curvature)
+        # 曲率 = |x'y'' - y'x''| / (x'² + y'²)^(3/2)
+        # 用于转向控制、速度规划和舒适性评估
         rk.append(sp.calc_curvature(i_s))
-
+    
+    # 步骤5: 返回完整的轨迹信息
+    # 所有列表长度相等，索引一一对应
     return rx, ry, ryaw, rk, s
 
 
