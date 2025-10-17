@@ -15,7 +15,6 @@ import matplotlib.pyplot as plt
 
 show_animation = True
 
-
 class AStarPlanner:
 
     def __init__(self, ox, oy, resolution, rr):
@@ -92,7 +91,7 @@ class AStarPlanner:
                                              lambda event: [exit(
                                                  0) if event.key == 'escape' else None])
                 if len(closed_set.keys()) % 10 == 0:
-                    plt.pause(0.001)
+                    plt.pause(0.5)
 
             if current.x == goal_node.x and current.y == goal_node.y:
                 print("Find goal")
