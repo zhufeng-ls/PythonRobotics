@@ -1,0 +1,18 @@
+[tool.jedi]
+extra_paths = [
+    "/home/zhufeng/code/PythonRobotics/PythonRobotics"
+]
+
+[tool.pyright]
+extraPaths = [
+    "/home/zhufeng/code/PythonRobotics/PythonRobotics"
+]
+
+[project]
+name = "PythonRobotics"
+requires-python = ">=3.8"
+dependencies = [
+    "numpy",
+    "matplotlib",
+    "scipy",
+]

@@ -1,0 +1,18 @@
+{
+    "files.associations": {
+        "*.resolved": "markdown"
+    },
+    "python.analysis.extraPaths": [
+        "${workspaceFolder}/PythonRobotics"
+    ],
+    "python.defaultInterpreterPath": "/home/zhufeng/anaconda3/envs/python_robotics/bin/python",
+    "python.analysis.autoImportCompletions": true,
+    "python.analysis.indexing": true,
+    "python.analysis.typeCheckingMode": "basic",
+    "python.linting.enabled": true,
+    "python.languageServer": "None",
+    "files.watcherExclude": {
+        "**/__pycache__/**": true,
+        "**/.pytest_cache/**": true
+    }
+}

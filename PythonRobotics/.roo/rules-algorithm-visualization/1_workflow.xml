@@ -1,0 +1,148 @@
+<algorithm_visualization_workflow>
+  <overview>
+    本工作流程指导如何通过交互式可视化帮助用户深入理解算法。
+    重点是创建单一、聚焦的演示，包含清晰的控制和注释。
+  </overview>
+
+  <initialization_steps>
+    <step number="1">
+      <title>理解用户请求</title>
+      <action>分析用户想要理解的算法方面</action>
+      <details>
+        识别：
+        - 目标算法文件
+        - 用户想要探索的特定参数或行为
+        - 学习目标（理解参数影响、决策逻辑等）
+      </details>
+    </step>
+
+    <step number="2">
+      <title>读取并分析算法源代码</title>
+      <tools>
+        <tool>read_file - 完整读取算法实现</tool>
+        <tool>search_files - 查找相关函数和类</tool>
+      </tools>
+      <analysis_points>
+        <point>识别关键参数及其作用范围</point>
+        <point>找出决策点和条件逻辑</point>
+        <point>理解算法的数学基础</point>
+        <point>提取核心概念和状态变量</point>
+      </analysis_points>
+    </step>
+
+    <step number="3">
+      <title>询问澄清问题</title>
+      <action>使用 ask_followup_question 确定可视化重点</action>
+      <example>
+        <question>您想重点理解算法的哪个方面？</question>
+        <suggestions>
+          <suggest>参数如何影响算法行为（如前视距离）</suggest>
+          <suggest>算法在特定场景下的决策逻辑（如急转弯）</suggest>
+          <suggest>算法的逐步执行过程</suggest>
+          <suggest>不同参数组合的对比效果</suggest>
+        </suggestions>
+      </example>
+    </step>
+  </initialization_steps>
+
+  <main_workflow>
+    <phase name="demo_design">
+      <description>设计可视化演示的结构</description>
+      <components>
+        <component name="parameter_panel">
+          <description>可调节的参数滑块</description>
+          <examples>
+            - 前视距离 (0.5-10m)
+            - 控制增益 (0.1-5.0)
+            - 速度 (0.5-5.0 m/s)
+          </examples>
+        </component>
+
+        <component name="control_panel">
+          <description>执行控制按钮</description>
+          <buttons>
+            - Step Forward: 前进一步
+            - Step Backward: 后退一步
+            - Reset: 重置到初始状态
+            - Play/Pause: 自动播放/暂停
+            - Speed Control: 播放速度调节
+          </buttons>
+        </component>
+
+        <component name="info_panel">
+          <description>实时信息显示</description>
+          <content>
+            - 当前状态变量值
+            - 正在应用的公式
+            - 决策逻辑说明
+            - 关键指标（误差、控制量等）
+          </content>
+        </component>
+
+        <component name="visualization_area">
+          <description>主要可视化区域</description>
+          <elements>
+            - 算法执行的图形表示
+            - 路径、轨迹或状态图
+            - 颜色编码的不同阶段
+            - 带箭头和文字的注释
+          </elements>
+        </component>
+      </components>
+    </phase>
+
+    <phase name="implementation">
+      <description>实现交互式演示</description>
+      <steps>
+        <step>创建 demos/ 子目录（如果不存在）</step>
+        <step>生成单个 Python 文件：[algorithm]_[feature]_demo.py</step>
+        <step>实现参数滑块和控制按钮</step>
+        <step>添加逐步执行逻辑</step>
+        <step>实现可视化更新函数</step>
+        <step>添加信息面板和注释</step>
+      </steps>
+
+      <code_structure>
+        <section>导入必要的库（matplotlib, numpy等）</section>
+        <section>定义算法核心函数</section>
+        <section>创建可视化类或函数</section>
+        <section>实现交互控制逻辑</section>
+        <section>主程序入口</section>
+      </code_structure>
+    </phase>
+
+    <phase name="validation">
+      <description>验证演示质量</description>
+      <checklist>
+        <item>演示可以直接运行无需修改</item>
+        <item>参数调节立即显示效果</item>
+        <item>逐步执行功能正常工作</item>
+        <item>信息面板清晰显示关键数据</item>
+        <item>可视化注释帮助理解决策</item>
+        <item>UI 文字使用英文（避免乱码）</item>
+        <item>代码注释使用中文（便于理解）</item>
+      </checklist>
+    </phase>
+  </main_workflow>
+
+  <file_organization>
+    <principle>保持工作空间整洁</principle>
+    <structure>
+      algorithm_directory/
+      ├── algorithm.py              # 原始算法文件
+      ├── demos/                    # 所有可视化演示放这里
+      │   ├── algorithm_feature1_demo.py
+      │   ├── algorithm_feature2_demo.py
+      │   └── ...
+      └── (不生成测试文件或 README，除非明确要求)
+    </structure>
+  </file_organization>
+
+  <completion_criteria>
+    <criterion>生成了一个聚焦的可视化演示</criterion>
+    <criterion>演示包含交互控制和参数调节</criterion>
+    <criterion>可视化清晰展示算法行为</criterion>
+    <criterion>提供了简洁的关键见解说明</criterion>
+    <criterion>文件放置在正确的 demos/ 目录中</criterion>
+  </completion_criteria>
+</algorithm_visualization_workflow>

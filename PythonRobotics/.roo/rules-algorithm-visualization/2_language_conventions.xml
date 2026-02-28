@@ -1,0 +1,306 @@
+<language_conventions>
+  <overview>
+    本文档定义了算法可视化演示中的语言使用规范。
+    严格遵守这些规范以避免UI编码问题（乱码）。
+  </overview>
+
+  <critical_rule>
+    <title>防止UI乱码的关键原则</title>
+    <principle>
+      所有在屏幕上显示的UI元素必须使用英文/ASCII字符。
+      中文字符在matplotlib等可视化库中会导致mojibake（乱码）。
+    </principle>
+  </critical_rule>
+
+  <code_comments_and_documentation>
+    <title>代码注释和文档</title>
+    <rules>
+      <rule type="mandatory">
+        <element>所有代码注释</element>
+        <language>中文（简体中文）</language>
+        <reason>便于中文用户理解代码逻辑</reason>
+        <example>
+          # 计算转向角度，基于前视距离和横向偏差
+          def calculate_steering(lookahead_distance, lateral_error):
+              # 应用 Pure Pursuit 公式
+              alpha = math.atan2(2 * WHEELBASE * lateral_error, lookahead_distance**2)
+              return alpha
+        </example>
+      </rule>
+
+      <rule type="recommended">
+        <element>Docstrings（文档字符串）</element>
+        <language>中文（简体中文）</language>
+        <reason>提供清晰的函数和类说明</reason>
+        <example>
+          def calculate_steering(lookahead_distance, lateral_error):
+              """
+              计算转向控制量
+              
+              Args:
+                  lookahead_distance: 前视距离 (m)
+                  lateral_error: 横向误差 (m)
+              
+              Returns:
+                  steering_angle: 转向角 (rad)
+              """
+              pass
+        </example>
+      </rule>
+
+      <rule type="mandatory">
+        <element>内联解释</element>
+        <language>中文（简体中文）</language>
+        <reason>帮助理解复杂逻辑</reason>
+      </rule>
+    </rules>
+  </code_comments_and_documentation>
+
+  <ui_elements>
+    <title>UI元素（禁止使用中文！）</title>
+    <rules>
+      <rule type="mandatory">
+        <element>按钮标签</element>
+        <language>英文</language>
+        <correct_examples>
+          - "Step Forward"
+          - "Step Backward"
+          - "Reset"
+          - "Play/Pause"
+          - "Play"
+          - "Pause"
+        </correct_examples>
+        <wrong_examples>
+          - "单步前进" ❌ 会导致乱码
+          - "重置" ❌ 会导致乱码
+          - "播放/暂停" ❌ 会导致乱码
+        </wrong_examples>
+      </rule>
+
+      <rule type="mandatory">
+        <element>图表标题</element>
+        <language>英文</language>
+        <correct_examples>
+          - "Algorithm Visualization"
+          - "Pure Pursuit Path Tracking"
+          - "Parameter Impact Analysis"
+        </correct_examples>
+        <wrong_examples>
+          - "算法可视化" ❌
+          - "纯跟踪路径跟踪" ❌
+        </wrong_examples>
+      </rule>
+
+      <rule type="mandatory">
+        <element>坐标轴标签</element>
+        <language>英文</language>
+        <correct_examples>
+          - "X Position (m)"
+          - "Y Position (m)"
+          - "Time (s)"
+          - "Velocity (m/s)"
+          - "Steering Angle (rad)"
+        </correct_examples>
+        <wrong_examples>
+          - "X 位置 (m)" ❌
+          - "时间 (秒)" ❌
+        </wrong_examples>
+      </rule>
+
+      <rule type="mandatory">
+        <element>图例文字</element>
+        <language>英文</language>
+        <correct_examples>
+          - "Reference Path"
+          - "Vehicle Position"
+          - "Target Point"
+          - "Lookahead Point"
+        </correct_examples>
+        <wrong_examples>
+          - "参考路径" ❌
+          - "车辆位置" ❌
+        </wrong_examples>
+      </rule>
+
+      <rule type="mandatory">
+        <element>信息面板文字</element>
+        <language>英文</language>
+        <correct_examples>
+          - "Current State:"
+          - "Lookahead Distance: 2.5 m"
+          - "Steering Angle: 0.15 rad"
+          - "Cross-track Error: 0.3 m"
+        </correct_examples>
+        <wrong_examples>
+          - "当前状态：" ❌
+          - "前视距离：2.5 m" ❌
+        </wrong_examples>
+      </rule>
+
+      <rule type="mandatory">
+        <element>滑块标签</element>
+        <language>英文</language>
+        <correct_examples>
+          - "Lookahead Distance"
+          - "Control Gain"
+          - "Speed"
+          - "Step Size"
+        </correct_examples>
+        <wrong_examples>
+          - "前视距离" ❌
+          - "控制增益" ❌
+        </wrong_examples>
+      </rule>
+
+      <rule type="mandatory">
+        <element>变量名</element>
+        <language>英文</language>
+        <reason>标准编程实践</reason>
+        <correct_examples>
+          - lookahead_distance
+          - steering_angle
+          - lateral_error
+        </correct_examples>
+      </rule>
+    </rules>
+  </ui_elements>
+
+  <complete_example>
+    <title>完整的正确示例</title>
+    <code><![CDATA[
+import matplotlib.pyplot as plt
+from matplotlib.widgets import Button, Slider
+
+# 计算转向角度，基于前视距离和横向偏差
+def calculate_steering(lookahead_distance, lateral_error):
+    """
+    计算转向控制量
+    
+    Args:
+        lookahead_distance: 前视距离 (m)
+        lateral_error: 横向误差 (m)
+    
+    Returns:
+        steering_angle: 转向角 (rad)
+    """
+    # 应用 Pure Pursuit 公式
+    WHEELBASE = 2.5  # 轴距
+    alpha = math.atan2(2 * WHEELBASE * lateral_error, lookahead_distance**2)
+    return alpha
+
+# 创建可视化
+fig, ax = plt.subplots()
+
+# ✅ 正确：UI 文字使用英文
+ax.set_title('Pure Pursuit Path Tracking')           # ✅ 正确
+ax.set_xlabel('X Position (m)')                      # ✅ 正确
+ax.set_ylabel('Y Position (m)')                      # ✅ 正确
+ax.legend(['Reference Path', 'Vehicle Position'])    # ✅ 正确
+
+# 创建按钮
+btn_step = Button(ax_btn, 'Step Forward')           # ✅ 正确
+btn_reset = Button(ax_reset, 'Reset')               # ✅ 正确
+
+# 创建滑块
+slider_ld = Slider(ax_slider, 'Lookahead Distance', 
+                   0.5, 10.0, valinit=2.5)          # ✅ 正确
+
+# ❌ 错误示例 - 会导致乱码
+# ax.set_title('纯跟踪路径跟踪')                    # ❌ 错误！
+# btn_step = Button(ax_btn, '单步前进')             # ❌ 错误！
+# slider_ld = Slider(ax_slider, '前视距离',         # ❌ 错误！
+#                    0.5, 10.0, valinit=2.5)
+    ]]></code>
+  </complete_example>
+
+  <encoding_issue_prevention>
+    <title>编码问题预防</title>
+    <guidelines>
+      <guideline>
+        <issue>matplotlib中的中文字符显示为方块或乱码</issue>
+        <solution>所有matplotlib UI元素使用英文/ASCII字符</solution>
+      </guideline>
+      
+      <guideline>
+        <issue>按钮标签显示异常</issue>
+        <solution>Button()的label参数必须是英文字符串</solution>
+      </guideline>
+      
+      <guideline>
+        <issue>滑块标签不可读</issue>
+        <solution>Slider()的label参数必须是英文字符串</solution>
+      </guideline>
+      
+      <guideline>
+        <issue>图表标题和轴标签乱码</issue>
+        <solution>set_title(), set_xlabel(), set_ylabel()使用英文</solution>
+      </guideline>
+    </guidelines>
+  </encoding_issue_prevention>
+
+  <quick_reference>
+    <title>快速参考表</title>
+    <table>
+      <row>
+        <element>代码注释</element>
+        <language>中文 ✅</language>
+        <example># 计算误差</example>
+      </row>
+      <row>
+        <element>Docstrings</element>
+        <language>中文 ✅</language>
+        <example>"""计算转向角"""</example>
+      </row>
+      <row>
+        <element>按钮标签</element>
+        <language>英文 ✅</language>
+        <example>"Step Forward"</example>
+      </row>
+      <row>
+        <element>图表标题</element>
+        <language>英文 ✅</language>
+        <example>"Path Tracking"</example>
+      </row>
+      <row>
+        <element>坐标轴标签</element>
+        <language>英文 ✅</language>
+        <example>"X Position (m)"</example>
+      </row>
+      <row>
+        <element>图例文字</element>
+        <language>英文 ✅</language>
+        <example>"Reference Path"</example>
+      </row>
+      <row>
+        <element>滑块标签</element>
+        <language>英文 ✅</language>
+        <example>"Lookahead Distance"</example>
+      </row>
+      <row>
+        <element>信息面板</element>
+        <language>英文 ✅</language>
+        <example>"Current State:"</example>
+      </row>
+      <row>
+        <element>变量名</element>
+        <language>英文 ✅</language>
+        <example>lookahead_distance</example>
+      </row>
+    </table>
+  </quick_reference>
+
+  <validation_checklist>
+    <title>语言规范验证清单</title>
+    <checks>
+      <check>所有按钮标签使用英文</check>
+      <check>所有图表标题使用英文</check>
+      <check>所有坐标轴标签使用英文</check>
+      <check>所有图例文字使用英文</check>
+      <check>所有滑块标签使用英文</check>
+      <check>所有信息面板文字使用英文</check>
+      <check>所有代码注释使用中文</check>
+      <check>所有docstrings使用中文</check>
+      <check>没有在UI元素中使用中文字符</check>
+    </checks>
+  </validation_checklist>
+</language_conventions>

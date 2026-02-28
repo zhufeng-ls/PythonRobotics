@@ -1,0 +1,39 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+
+        {
+            "name": "Python Conda",
+            "type": "python",
+            "request": "launch",
+            "program": "${file}",
+            "python": "/home/zhufeng/anaconda3/envs/python_robotics/bin/python",
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}",
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}",
+                "DISPLAY": "${env:DISPLAY}"
+            },
+            "args": [],
+            "justMyCode": false,
+            "stopOnEntry": false
+        },
+        {
+            "name": "Python Conda Debug",
+            "type": "python",
+            "request": "launch",
+            "program": "${file}",
+            "python": "/home/zhufeng/anaconda3/envs/python_robotics/bin/python",
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}",
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}",
+                "DISPLAY": "${env:DISPLAY}",
+                "MPLBACKEND": "Agg"
+            },
+            "args": [],
+            "justMyCode": false,
+            "stopOnEntry": false
+        }
+    ]
+} 

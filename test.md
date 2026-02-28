@@ -1,0 +1,1 @@
+ $\delta_e = \tan^{-1}(\frac{k \cdot e}{v})$

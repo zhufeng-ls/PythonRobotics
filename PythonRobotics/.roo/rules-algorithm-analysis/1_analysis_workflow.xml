@@ -1,0 +1,164 @@
+<algorithm_analysis_workflow>
+  <overview>
+    本工作流程指导如何分析PythonRobotics库中的机器人算法。
+    重点是通过代码阅读、数学解释和实际示例来深入理解算法。
+  </overview>
+
+  <initialization_steps>
+    <step number="1">
+      <title>确定分析目标</title>
+      <action>明确用户想要分析的算法和具体方面</action>
+      <details>
+        识别：
+        - 目标算法名称（如A*、RRT*、LQR、EKF等）
+        - 算法所在路径（PathPlanning/, Localization/等）
+        - 用户的具体问题（原理、参数、性能、比较等）
+        - 期望的输出形式（文字解释、数学推导、代码示例等）
+      </details>
+    </step>
+
+    <step number="2">
+      <title>定位算法文件</title>
+      <tools>
+        <tool>search_files - 搜索算法相关文件</tool>
+        <tool>read_file - 读取算法实现代码</tool>
+      </tools>
+      <search_patterns>
+        <pattern>按算法名称搜索：**/*算法名称*</pattern>
+        <pattern>按目录搜索：PathPlanning/*算法名称*</pattern>
+        <pattern>查找demo文件：**/demos/*算法名称*</pattern>
+      </search_patterns>
+    </step>
+
+    <step number="3">
+      <title>读取并理解代码</title>
+      <analysis_focus>
+        <focus>算法类结构和主要方法</focus>
+        <focus>关键参数及其默认值</focus>
+        <focus>核心算法逻辑（主循环、决策点）</focus>
+        <focus>输入输出格式</focus>
+        <focus>使用的数学公式和库函数</focus>
+      </analysis_focus>
+    </step>
+  </initialization_steps>
+
+  <core_analysis_phases>
+    <phase name="algorithm_explanation">
+      <description>解释算法工作原理</description>
+      <components>
+        <component name="high_level_overview">
+          <description>高层次算法描述</description>
+          <content>
+            - 算法类型（搜索、采样、优化、滤波等）
+            - 主要思想和直觉
+            - 适用场景和限制
+            - 时间/空间复杂度
+          </content>
+        </component>
+
+        <component name="mathematical_foundation">
+          <description>数学基础</description>
+          <content>
+            - 关键公式和推导
+            - 参数的意义和影响
+            - 优化目标或损失函数
+            - 收敛性或稳定性分析
+          </content>
+        </component>
+
+        <component name="implementation_details">
+          <description>实现细节</description>
+          <content>
+            - 数据结构选择
+            - 关键函数的作用
+            - 特殊技巧或优化
+            - 与标准实现的差异
+          </content>
+        </component>
+      </components>
+    </phase>
+
+    <phase name="parameter_analysis">
+      <description>分析算法参数</description>
+      <steps>
+        <step>列出所有可调参数</step>
+        <step>解释每个参数的作用</step>
+        <step>说明参数对算法行为的影响</step>
+        <step>提供参数调优建议</step>
+        <step>演示参数变化的效果（如果有demo）</step>
+      </steps>
+    </phase>
+
+    <phase name="comparative_analysis">
+      <description>比较相关算法</description>
+      <comparison_aspects>
+        <aspect>性能特点（速度、精度、内存）</aspect>
+        <aspect>适用场景</aspect>
+        <aspect>实现复杂度</aspect>
+        <aspect>鲁棒性和稳定性</aspect>
+        <aspect>扩展性和灵活性</aspect>
+      </comparison_aspects>
+      <related_algorithms>
+        <suggestion>在同一目录下查找类似算法</suggestion>
+        <suggestion>参考PythonRobotics文档中的算法分类</suggestion>
+        <suggestion>基于算法类型推荐替代方案</suggestion>
+      </related_algorithms>
+    </phase>
+
+    <phase name="practical_insights">
+      <description>提供实践见解</description>
+      <insights>
+        <insight>常见使用陷阱和解决方法</insight>
+        <insight>调试技巧和诊断方法</insight>
+        <insight>性能优化建议</insight>
+        <insight>扩展或修改算法的指导</insight>
+        <insight>实际应用案例参考</insight>
+      </insights>
+    </phase>
+  </core_analysis_phases>
+
+  <output_format>
+    <section name="executive_summary">
+      <description>简要总结算法核心</description>
+      <bullet_points>3-5个关键点</bullet_points>
+    </section>
+
+    <section name="detailed_explanation">
+      <description>分部分详细解释</description>
+      <subsections>
+        <subsection>工作原理</subsection>
+        <subsection>参数分析</subsection>
+        <subsection>实现细节</subsection>
+        <subsection>性能特点</subsection>
+      </subsections>
+    </section>
+
+    <section name="practical_guidance">
+      <description>使用指导</description>
+      <content>
+        - 如何选择合适的参数
+        - 常见问题解决方案
+        - 扩展和修改建议
+      </content>
+    </section>
+
+    <section name="further_resources">
+      <description>进一步学习资源</description>
+      <resources>
+        - 相关论文引用
+        - 教科书章节
+        - 在线教程或视频
+        - 类似算法的实现
+      </resources>
+    </section>
+  </output_format>
+
+  <completion_criteria>
+    <criterion>提供了全面的算法解释</criterion>
+    <criterion>涵盖了数学基础和实现细节</criterion>
+    <criterion>分析了参数影响和调优建议</criterion>
+    <criterion>比较了相关算法</criterion>
+    <criterion>给出了实践指导</criterion>
+    <criterion>引用了进一步资源</criterion>
+  </completion_criteria>
+</algorithm_analysis_workflow>

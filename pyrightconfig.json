@@ -1,0 +1,19 @@
+{
+  "include": [
+    "PythonRobotics/**",
+    "PythonRoboticsLearning/**"
+  ],
+  "exclude": [
+    "**/__pycache__",
+    "**/.pytest_cache",
+    "**/node_modules"
+  ],
+  "extraPaths": [
+    "/home/zhufeng/code/PythonRobotics/PythonRobotics"
+  ],
+  "pythonVersion": "3.13",
+  "pythonPlatform": "Linux",
+  "typeCheckingMode": "basic",
+  "venvPath": "/home/zhufeng/anaconda3/envs",
+  "venv": "python_robotics"
+}
