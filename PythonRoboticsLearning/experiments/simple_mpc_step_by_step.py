@@ -6,9 +6,11 @@ Author: Learning Project
 Date: 2026-02-27
 """
 
+from cvxpy.reductions.solvers import solver
 import numpy as np
 import matplotlib.pyplot as plt
 import math
+import cvxpy
 from dataclasses import dataclass
 from typing import Tuple, List, Optional
 
@@ -239,3 +241,306 @@ def test_linearization():
 if __name__ == "__main__":
     test_vehicle_model()
     test_linearization()
+
+# ============================================================================
+# 第5步：代价函数权重矩阵（待实现）
+# ============================================================================
+
+# TODO: 请实现 MPCWeights 类
+#
+# MPC的代价函数由多个权重矩阵组成，每个矩阵代表不同的控制目标：
+#
+# 提示：
+# 1. 定义状态跟踪权重矩阵 Q = diag([Qx, Qy, Qv, Qyaw])
+#    - Qx, Qy: 位置误差权重（优先保证轨迹跟踪）
+#    - Qv, Qyaw: 速度和航向角误差权重
+#
+# 2. 定义控制输入权重矩阵 R = diag([Ra, Rdelta])
+#    - Ra: 加速度代价（避免过大的加速度）
+#    - Rdelta: 转向角代价（避免过大的转向角）
+#
+# 3. 定义控制平滑权重矩阵 Rd = diag([Rda, Rd_delta])
+#    - Rda: 加速度变化率权重
+#    - Rd_delta: 转向角变化率权重（为什么这个要大很多？）
+#
+# 4. 定义终端权重 Qf = Q（终端状态的重要性）
+#
+# 思考题：
+# - 为什么 Rd_delta 要比 Rda 大100倍？（考虑车辆动力学特性）
+# - Q 和 R 的相对大小如何影响控制效果？
+
+class MPCWeights:
+    """MPC权重矩阵定义"""
+
+    def __init__(self):
+        """初始化权重矩阵"""
+        # TODO: 在这里实现权重矩阵
+        # 提示：使用 np.diag() 创建对角矩阵,它是对角矩阵
+        self.Q = np.diag([1.0, 1.0, 0.5, 0.5])
+        self.R = np.diag([0.01, 0.01])
+        self.Rd = np.diag([0.01, 1.0])
+
+        self.Qf = self.Q
+
+    def print_weights(self):
+        """打印权重矩阵信息"""
+        # TODO: 打印各个权重值，便于调试
+        print("\n=== MPC Weights ===")
+        print("Q (state tracking):")
+        print(f"  Qx={self.Q[0,0]:.2f}, Qy={self.Q[1,1]:.2f}")
+        print(f"  Qv={self.Q[2,2]:.2f}, Qyaw={self.Q[3,3]:.2f}")
+        print("\nR (control cost):")
+        print(f"  Ra={self.R[0,0]:.3f}, Rδ={self.R[1,1]:.3f}")
+        print("\nRd (control smoothness):")
+        print(f"  Rda={self.Rd[0,0]:.3f}, Rdδ={self.Rd[1,1]:.2f}")
+        print(f"\n转向平滑权重 / 加速度平滑权重 = {self.Rd[1,1]/self.Rd[0,0]:.0f}倍")
+
+# ============================================================================
+# 第6步：MPC控制器（待实现）
+# ============================================================================
+
+class SimpleMPCController:
+    """简化的MPC控制器（教学版）"""
+
+    def __init__(self, horizon=5, dt=0.2, wheelbase=2.5):
+        """
+        初始化MPC控制器
+
+        Args:
+            horizon: 预测时域 T
+            dt: 时间步长
+            wheelbase: 轴距
+        """
+        self.T = horizon
+        self.dt = dt
+        self.WB = wheelbase
+
+        # 创建车辆模型和线性化器
+        self.vehicle = VehicleModel(wheelbase=wheelbase, dt=dt)
+        self.linearizer = MPCLinearization(self.vehicle)
+
+        # 权重矩阵
+        self.weights = MPCWeights()
+
+        # 车辆物理限制
+        self.MAX_SPEED = 15.0      # m/s
+        self.MIN_SPEED = -5.0      # m/s
+        self.MAX_ACCEL = 1.0       # m/s²
+        self.MAX_STEER = 0.6       # rad (约34度)
+        self.MAX_DSTEER = 0.5      # rad/s (转向速率限制)
+
+    def predict_trajectory(self, x0, u_sequence):
+        """
+        TODO: 使用非线性模型预测轨迹（用于线性化工作点）
+
+        这个方法的作用是什么？
+        - 给定初始状态和控制序列，预测未来T步的状态轨迹
+        - 这个轨迹用作线性化的工作点（xbar）
+
+        Args:
+            x0: 初始状态 [x, y, v, yaw]
+            u_sequence: 控制序列 T×2，每一行是[acceleration, steering_angle]
+
+        Returns:
+            xbar: 预测轨迹 (4, T+1)，每一列是一个时刻的状态
+
+        提示：
+        1. 初始化状态轨迹数组 xbar (4行, T+1列)
+        2. 设置初始状态 xbar[:, 0] = x0
+        3. 循环T步，每步：
+           - 提取当前控制输入 u_sequence[t]
+           - 使用 vehicle.update_state() 更新状态
+           - 存储新状态到 xbar[:, t+1]
+        """
+        xbar = np.zeros((4, self.T + 1))
+        xbar[:, 0] = x0
+
+        state = VehicleState(x=x0[0], y=x0[1], v=x0[2], yaw=x0[3])
+
+        for t in range(self.T):
+            accel = u_sequence[t, 0]
+            delta = u_sequence[t, 1]
+
+            state = self.vehicle.update_state(state, accel, delta)
+            xbar[:, t+1] = [state.x, state.y, state.v, state.yaw]
+
+        return xbar
+
+    def solve_linear_mpc(self, xref, xbar, x0, dref):
+        """
+        TODO: 求解线性MPC问题（单次优化）
+
+        这是MPC的核心！需要使用CVXPY构建并求解QP问题。
+
+        Args:
+            xref: 参考轨迹 (4, T+1) - 我们想要跟踪的目标轨迹
+            xbar: 线性化工作点轨迹 (4, T+1) - 用于每步的线性化
+            x0: 初始状态 (4,) - 当前状态约束
+            dref: 参考转向角序列 (T,) - 用于线性化的参考转向角
+
+        Returns:
+            u_opt: 最优控制序列 (T, 2)
+            x_opt: 最优状态轨迹 (4, T+1)
+
+        关键步骤：
+        1. 定义优化变量：x (状态轨迹), u (控制序列)
+        2. 构建代价函数：
+           - 状态跟踪代价：||xref[t] - x[t]||²_Q
+           - 控制输入代价：||u[t]||²_R
+           - 控制平滑性代价：||u[t+1] - u[t]||²_Rd
+           - 终端代价：||xref[T] - x[T]||²_Qf
+        3. 添加约束：
+           - 初始状态约束：x[:, 0] == x0
+           - 动态约束（线性化）：x[t+1] = A[t] @ x[t] + B[t] @ u[t] + C[t]
+           - 物理约束（速度、加速度、转向角限制）
+        4. 求解QP问题
+
+        注意：CVXPY变量形状
+        - x = cvxpy.Variable((4, T+1)) → x.value 形状 (4, T+1)
+        - u = cvxpy.Variable((2, T)) → u.value 形状 (2, T)
+        - 返回时需要转置：u.value.T 得到 (T, 2)
+        """
+
+        x =  cvxpy.Variable((4, self.T + 1))
+        u =  cvxpy.Variable((2, self.T))
+
+        # 代价函数与约束条件
+        cost = 0.0
+        constraints = []
+
+        #初始约束
+        constraints += [x[:,0] == x0]
+
+        # 构建状态约束和动态约束
+        for t in range(self.T):
+            # 控制代价
+            cost += cvxpy.quad_form(u[:,t], self.weights.R)
+
+            # 状态跟踪代价
+            if t != 0:
+                cost += cvxpy.quad_form(xref[:, t] - x[:, t], self.weights.Q)
+
+            # 动态约束
+            A, B, C = self.linearizer.get_linearized_matrices(VehicleState(xbar[0, t], xbar[1, t], xbar[2, t], xbar[3, t]), dref[t])
+            constraints += [x[:, t+1] == A @ x[:, t] + B @ u[:, t] + C]
+
+            # 控制平滑性代价
+            if t < (self.T - 1):
+                cost += cvxpy.quad_form(u[:, t+1] - u[:, t], self.weights.Rd)
+
+                # 转向速率约束,u是2xN
+                constraints += [cvxpy.abs(u[1, t+1] - u[1, t]) <= self.MAX_STEER * self.dt]
+
+        # 终端代价
+        cost += cvxpy.quad_form(xref[:, self.T] - x[:, self.T], self.weights.Qf)
+
+        # 物理约束
+        
+        ## 控制量
+        constraints += [cvxpy.abs(u[1, :]) <= self.MAX_STEER]
+        constraints += [cvxpy.abs(u[0, :]) <= self.MAX_ACCEL]
+        
+        ## 状态量
+        constraints += [x[2, :] <= self.MAX_SPEED]
+        constraints += [x[2, :] >= self.MIN_SPEED]
+
+        # 求解 QP 问题
+        prob = cvxpy.Problem(cvxpy.Minimize(cost), constraints)
+        prob.solve(solver=cvxpy.CLARABEL, verbose=False)
+
+        if prob.status == cvxpy.OPTIMAL or prob.status == cvxpy.OPTIMAL_INACCURATE:
+            return u.value.T, x.value
+        else:
+            print(f"MPC 求解失败: {prob.status}")
+            return None, None
+            
+
+    def compute_control(self, current_state, reference_trajectory):
+        """
+        TODO: 计算MPC控制输入（迭代线性化）
+
+        这个方法实现了迭代线性化MPC (ILMPC)：
+        - 为什么需要迭代？因为线性化在工作点附近才准确
+        - 每次迭代：预测轨迹 → 线性化 → 求解QP → 更新控制序列
+
+        Args:
+            current_state: 当前状态 [x, y, v, yaw]
+            reference_trajectory: 参考轨迹 (4, T+1)
+
+        Returns:
+            optimal_control: 最优控制 [acceleration, steering_angle]
+
+        算法流程：
+        1. 初始化控制序列 u_init = 0
+        2. 迭代（最多3次）：
+           a. 用当前u预测轨迹 xbar
+           b. 求解线性MPC得到新u
+           c. 检查收敛（||u_new - u_old|| < threshold）
+        3. 返回第一个控制输入（MPC的滚动时域特性）
+
+        思考：为什么只返回第一个控制输入？
+        """
+        # 初始参数状态为0，Tx1
+        dref = np.zeros(self.T)
+
+        # 初始控制序列
+        u_init = np.zeros((self.T, 2))
+
+        # 迭代线性化MPC
+        MAX_ITER = 3
+        u_opt = u_init.copy()
+
+        for iter in range(MAX_ITER):
+            # 预测轨迹
+            xbar = self.predict_trajectory(current_state, u_opt)
+
+            # 求解线性MPC
+            u_new, x_new = self.solve_linear_mpc(reference_trajectory,xbar, current_state, dref)
+
+            if u_new is None:
+                break
+
+        return u_opt[0]
+
+# ============================================================================
+# 第7步：测试完整的MPC控制器
+# ============================================================================
+
+def test_mpc_controller():
+    """测试MPC控制器"""
+    print("\n=== Testing MPC Controller ===")
+
+    # 创建MPC控制器
+    mpc = SimpleMPCController(horizon=5, dt=0.2, wheelbase=2.5)
+
+    # 打印权重信息
+    mpc.weights.print_weights()
+
+    # 当前状态
+    current_state = np.array([0.0, 0.0, 5.0, 0.0])  # [x, y, v, yaw]
+
+    # 参考轨迹（简单的直线轨迹）
+    T = mpc.T
+    xref = np.zeros((4, T + 1))
+    for t in range(T + 1):
+        xref[0, t] = current_state[0] + 5.0 * t * mpc.dt  # x位置
+        xref[1, t] = 0.0                                   # y位置
+        xref[2, t] = 5.0                                   # 速度
+        xref[3, t] = 0.0                                   # 航向角
+
+    print(f"\n当前状态: x={current_state[0]:.2f}, y={current_state[1]:.2f}, "
+          f"v={current_state[2]:.2f}, yaw={current_state[3]:.2f}")
+
+    # 计算MPC控制
+    optimal_control = mpc.compute_control(current_state, xref)
+
+    print(f"\n最优控制:")
+    print(f"  加速度: {optimal_control[0]:.4f} m/s²")
+    print(f"  转向角: {optimal_control[1]:.4f} rad ({np.degrees(optimal_control[1]):.2f}°)")
+
+    print("\n✅ MPC控制器测试完成!")
+
+if __name__ == "__main__":
+    test_vehicle_model()
+    test_linearization()
+    test_mpc_controller()
