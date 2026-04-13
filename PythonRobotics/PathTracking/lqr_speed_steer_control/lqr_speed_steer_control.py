@@ -1,31 +1,34 @@
 """
 
-Path tracking simulation with LQR speed and steering control
+Path tracking simulation with LQR steering control and PID speed control.
 
 author Atsushi Sakai (@Atsushi_twi)
 
 """
-import math
-import sys
-import matplotlib.pyplot as plt
-import numpy as np
 import scipy.linalg as la
+import matplotlib.pyplot as plt
+import math
+import numpy as np
+import sys
 import pathlib
 
 sys.path.append(str(pathlib.Path(__file__).parent.parent.parent))
 from utils.angle import angle_mod
 from PathPlanning.CubicSpline import cubic_spline_planner
 
-# === Parameters =====
+Kp = 1.0  # speed proportional gain
 
 # LQR parameter
-lqr_Q = np.eye(5)
-lqr_R = np.eye(2)
+Q = np.eye(4)
+R = np.eye(1)
+
+# parameters
 dt = 0.1  # time tick[s]
-L = 0.5  # Wheel base of the vehicle [m]
+L = 0.5  # Wheelbase of the vehicle [m]
 max_steer = np.deg2rad(45.0)  # maximum steering angle[rad]
 
 show_animation = True
+#  show_animation = False
 
 
 class State:
@@ -52,27 +55,33 @@ def update(state, a, delta):
     return state
 
 
+def pid_control(target, current):
+    a = Kp * (target - current)
+
+    return a
+
+
 def pi_2_pi(angle):
     return angle_mod(angle)
 
 
-def solve_dare(A, B, Q, R):
+def solve_DARE(A, B, Q, R):
     """
     solve a discrete time_Algebraic Riccati equation (DARE)
     """
-    x = Q
-    x_next = Q
+    X = Q
+    Xn = Q
     max_iter = 150
     eps = 0.01
 
     for i in range(max_iter):
-        x_next = A.T @ x @ A - A.T @ x @ B @ \
-                 la.inv(R + B.T @ x @ B) @ B.T @ x @ A + Q
-        if (abs(x_next - x)).max() < eps:
+        Xn = A.T @ X @ A - A.T @ X @ B @ \
+            la.inv(R + B.T @ X @ B) @ B.T @ X @ A + Q
+        if (abs(Xn - X)).max() < eps:
             break
-        x = x_next
+        X = Xn
 
-    return x_next
+    return Xn
 
 
 def dlqr(A, B, Q, R):
@@ -83,78 +92,49 @@ def dlqr(A, B, Q, R):
     """
 
     # first, try to solve the ricatti equation
-    X = solve_dare(A, B, Q, R)
+    X = solve_DARE(A, B, Q, R)
 
     # compute the LQR gain
     K = la.inv(B.T @ X @ B + R) @ (B.T @ X @ A)
 
-    eig_result = la.eig(A - B @ K)
+    eigVals, eigVecs = la.eig(A - B @ K)
 
-    return K, X, eig_result[0]
+    return K, X, eigVals
 
 
-def lqr_speed_steering_control(state, cx, cy, cyaw, ck, pe, pth_e, sp, Q, R):
+def lqr_steering_control(state, cx, cy, cyaw, ck, pe, pth_e):
     ind, e = calc_nearest_index(state, cx, cy, cyaw)
-
-    tv = sp[ind]
 
     k = ck[ind]
     v = state.v
     th_e = pi_2_pi(state.yaw - cyaw[ind])
 
-    # A = [1.0, dt, 0.0, 0.0, 0.0
-    #      0.0, 0.0, v, 0.0, 0.0]
-    #      0.0, 0.0, 1.0, dt, 0.0]
-    #      0.0, 0.0, 0.0, 0.0, 0.0]
-    #      0.0, 0.0, 0.0, 0.0, 1.0]
-    A = np.zeros((5, 5))
+    A = np.zeros((4, 4))
     A[0, 0] = 1.0
     A[0, 1] = dt
-    A[1, 2] = v
+    A[1, 2] = v # 它是变化率，所以不需要乘以dt
     A[2, 2] = 1.0
     A[2, 3] = dt
-    A[4, 4] = 1.0
+    # print(A)
 
-    # B = [0.0, 0.0
-    #     0.0, 0.0
-    #     0.0, 0.0
-    #     v/L, 0.0
-    #     0.0, dt]
-    B = np.zeros((5, 2))
-    B[3, 0] = v / L
-    B[4, 1] = dt
+    B = np.zeros((4, 1))
+    B[3, 0] = v / L # 它是航向角变化率，所以不需要乘以dt
 
     K, _, _ = dlqr(A, B, Q, R)
 
-    # state vector
-    # x = [e, dot_e, th_e, dot_th_e, delta_v]
-    # e: lateral distance to the path
-    # dot_e: derivative of e
-    # th_e: angle difference to the path
-    # dot_th_e: derivative of th_e
-    # delta_v: difference between current speed and target speed
-    x = np.zeros((5, 1))
+    x = np.zeros((4, 1))
+
     x[0, 0] = e
     x[1, 0] = (e - pe) / dt
     x[2, 0] = th_e
     x[3, 0] = (th_e - pth_e) / dt
-    x[4, 0] = v - tv
 
-    # input vector
-    # u = [delta, accel]
-    # delta: steering angle
-    # accel: acceleration
-    ustar = -K @ x
+    ff = math.atan2(L * k, 1)
+    fb = pi_2_pi((-K @ x)[0, 0])
 
-    # calc steering input
-    ff = math.atan2(L * k, 1)  # feedforward steering angle
-    fb = pi_2_pi(ustar[0, 0])  # feedback steering angle
     delta = ff + fb
 
-    # calc accel input
-    accel = ustar[1, 0]
-
-    return delta, ind, e, th_e, accel
+    return delta, ind, e, th_e
 
 
 def calc_nearest_index(state, cx, cy, cyaw):
@@ -179,7 +159,7 @@ def calc_nearest_index(state, cx, cy, cyaw):
     return ind, mind
 
 
-def do_simulation(cx, cy, cyaw, ck, speed_profile, goal):
+def closed_loop_prediction(cx, cy, cyaw, ck, speed_profile, goal):
     T = 500.0  # max simulation time
     goal_dis = 0.3
     stop_speed = 0.05
@@ -196,9 +176,10 @@ def do_simulation(cx, cy, cyaw, ck, speed_profile, goal):
     e, e_th = 0.0, 0.0
 
     while T >= time:
-        dl, target_ind, e, e_th, ai = lqr_speed_steering_control(
-            state, cx, cy, cyaw, ck, e, e_th, speed_profile, lqr_Q, lqr_R)
+        dl, target_ind, e, e_th = lqr_steering_control(
+            state, cx, cy, cyaw, ck, e, e_th)
 
+        ai = pid_control(speed_profile[target_ind], state.v)
         state = update(state, ai, dl)
 
         if abs(state.v) <= stop_speed:
@@ -237,13 +218,13 @@ def do_simulation(cx, cy, cyaw, ck, speed_profile, goal):
     return t, x, y, yaw, v
 
 
-def calc_speed_profile(cyaw, target_speed):
-    speed_profile = [target_speed] * len(cyaw)
+def calc_speed_profile(cx, cy, cyaw, target_speed):
+    speed_profile = [target_speed] * len(cx)
 
     direction = 1.0
 
     # Set stop point
-    for i in range(len(cyaw) - 1):
+    for i in range(len(cx) - 1):
         dyaw = abs(cyaw[i + 1] - cyaw[i])
         switch = math.pi / 4.0 <= dyaw < math.pi / 2.0
 
@@ -258,46 +239,35 @@ def calc_speed_profile(cyaw, target_speed):
         if switch:
             speed_profile[i] = 0.0
 
-    # speed down
-    for i in range(40):
-        speed_profile[-i] = target_speed / (50 - i)
-        if speed_profile[-i] <= 1.0 / 3.6:
-            speed_profile[-i] = 1.0 / 3.6
+    speed_profile[-1] = 0.0
 
     return speed_profile
 
 
 def main():
     print("LQR steering control tracking start!!")
-    ax = [0.0, 6.0, 12.5, 10.0, 17.5, 20.0, 25.0]
-    ay = [0.0, -3.0, -5.0, 6.5, 3.0, 0.0, 0.0]
+    ax = [0.0, 6.0, 12.5, 10.0, 7.5, 3.0, -1.0]
+    ay = [0.0, -3.0, -5.0, 6.5, 3.0, 5.0, -2.0]
     goal = [ax[-1], ay[-1]]
 
     cx, cy, cyaw, ck, s = cubic_spline_planner.calc_spline_course(
         ax, ay, ds=0.1)
     target_speed = 10.0 / 3.6  # simulation parameter km/h -> m/s
 
-    sp = calc_speed_profile(cyaw, target_speed)
+    sp = calc_speed_profile(cx, cy, cyaw, target_speed)
 
-    t, x, y, yaw, v = do_simulation(cx, cy, cyaw, ck, sp, goal)
+    t, x, y, yaw, v = closed_loop_prediction(cx, cy, cyaw, ck, sp, goal)
 
     if show_animation:  # pragma: no cover
         plt.close()
         plt.subplots(1)
-        plt.plot(ax, ay, "xb", label="waypoints")
-        plt.plot(cx, cy, "-r", label="target course")
+        plt.plot(ax, ay, "xb", label="input")
+        plt.plot(cx, cy, "-r", label="spline")
         plt.plot(x, y, "-g", label="tracking")
         plt.grid(True)
         plt.axis("equal")
         plt.xlabel("x[m]")
         plt.ylabel("y[m]")
-        plt.legend()
-        plt.subplots(1)
-
-        plt.plot(t, np.array(v)*3.6, label="speed")
-        plt.grid(True)
-        plt.xlabel("Time [sec]")
-        plt.ylabel("Speed [m/s]")
         plt.legend()
 
         plt.subplots(1)
